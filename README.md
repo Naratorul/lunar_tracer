@@ -9,7 +9,7 @@ Output is a 24-bit BMP (`lunar.bmp`) plus a plain-text sidecar (`lunar.meta`)
 containing the phase angle, illumination fraction, sub-solar coordinates, and the
 render parameters used.
 
-![lunar render example](image.bmp)
+![lunar render example](image_.png)
 
 ---
 
