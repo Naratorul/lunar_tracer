@@ -1,4 +1,4 @@
-# lunar_tracer v2
+# lunar_tracer v2 (AfterDemo)
 
 A physically-based path tracer for the Moon. Given a date and time, it computes
 accurate Sun and Earth directions using low-precision analytic ephemerides, loads a
