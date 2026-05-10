@@ -121,7 +121,7 @@ The reflectance model is Hapke (1981/2002) with:
 The shadow check fires 4 stratified cone rays spanning the Sun's angular diameter
 (0.5°) and averages the visibility. This gives penumbra on crater walls without
 being too expensive at low spp.
-
+![Light vector animation](gif.gif)
 ### Earthshine
 
 The dark limb receives a dim blue-white contribution from `Earthshine::eval()`.
