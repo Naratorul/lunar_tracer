@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>lunar_tracer — InfoEducație 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+
+:root{
+  --bg:#07060f;
+  --surface:#0f0d1c;
+  --card:#161425;
+  --card2:#1c192e;
+  --border:rgba(255,255,255,0.07);
+  --border2:rgba(255,255,255,0.13);
+  --moon:#ede7d8;
+  --moon2:#b5ae9f;
+  --moon3:#6e6860;
+  --gold:#c9974a;
+  --gold2:#8a6428;
+  --blue:#5b8fcf;
+  --teal:#3fa89a;
+  --text:#ccc6b8;
+  --textd:#7a7468;
+}
+
+html,body{background:var(--bg);color:var(--text);font-family:'IBM Plex Sans',sans-serif;height:100%;overflow:hidden;}
+
+canvas#stars{position:fixed;inset:0;pointer-events:none;z-index:0;}
+
+/* DECK */
+.deck{position:relative;z-index:1;width:100vw;height:100vh;overflow:hidden;}
+
+.slide{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;justify-content:center;align-items:center;
+  padding:4vh 5vw 8vh;
+  opacity:0;transform:translateY(24px);
+  transition:opacity .6s cubic-bezier(.4,0,.2,1),transform .6s cubic-bezier(.4,0,.2,1);
+  pointer-events:none;
+  overflow:hidden;
+}
+.slide.active{opacity:1;transform:none;pointer-events:all;}
+.slide.exit{opacity:0;transform:translateY(-20px);transition:opacity .35s ease,transform .35s ease;}
+
+/* PROGRESS */
+#pbar{position:fixed;bottom:0;left:0;height:2px;background:var(--gold);transition:width .5s ease;z-index:100;}
+
+/* NAV */
+#nav{position:fixed;bottom:2.2rem;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:1.2rem;z-index:100;}
+.nbtn{background:rgba(255,255,255,0.04);border:.5px solid var(--border2);color:var(--moon3);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;padding:.45rem 1.1rem;cursor:pointer;border-radius:2px;transition:all .2s;}
+.nbtn:hover{background:rgba(201,151,74,.1);border-color:var(--gold2);color:var(--gold);}
+#ctr{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--moon3);letter-spacing:.15em;min-width:52px;text-align:center;}
+
+/* CHAPTER BADGE */
+.chap-badge{
+  display:inline-flex;align-items:center;gap:.5rem;
+  font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--gold);margin-bottom:.8rem;
+}
+.chap-badge::before{content:'';width:20px;height:1px;background:var(--gold2);}
+
+/* SLIDE TITLE */
+.stitle{font-family:'Lora',serif;font-size:clamp(22px,3.2vw,40px);font-weight:500;color:var(--moon);line-height:1.2;letter-spacing:-.01em;margin-bottom:.5rem;}
+.stitle em{font-style:italic;color:var(--gold);}
+.srule{width:36px;height:1.5px;background:var(--gold2);margin:.8rem 0 1.5rem;}
+
+/* SCORE PILL */
+.score-pill{display:inline-flex;align-items:center;gap:.4rem;background:rgba(201,151,74,.1);border:.5px solid var(--gold2);padding:.2rem .7rem;border-radius:20px;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;color:var(--gold);margin-left:.8rem;vertical-align:middle;}
+
+/* BODY */
+.body{font-family:'IBM Plex Sans',sans-serif;font-size:clamp(13px,1.5vw,17px);font-weight:300;line-height:1.8;color:var(--text);}
+.body em{font-style:italic;color:var(--moon);}
+.body strong{font-weight:500;color:var(--gold);}
+.body p+p{margin-top:.9em;}
+
+/* GRID LAYOUTS */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:2rem;width:100%;max-width:1000px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.2rem;width:100%;max-width:1000px;}
+.gcol{display:flex;flex-direction:column;gap:1rem;}
+
+/* CARD */
+.card{background:var(--card);border:.5px solid var(--border);padding:1.2rem 1.4rem;border-radius:3px;}
+.card.accent{border-top:2px solid var(--gold2);}
+.card.blue{border-top:2px solid var(--blue);}
+.card.teal{border-top:2px solid var(--teal);}
+.clabel{font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.2em;text-transform:uppercase;color:var(--moon3);margin-bottom:.5rem;display:block;}
+.cbody{font-size:clamp(12px,1.3vw,14px);font-weight:300;line-height:1.7;color:var(--text);}
+.cbody em{color:var(--moon);font-style:italic;}
+.cbody strong{color:var(--gold);font-weight:500;}
+
+/* STEP LIST */
+.steps{display:flex;flex-direction:column;gap:.9rem;width:100%;max-width:1000px;}
+.step{display:grid;grid-template-columns:44px 1fr;gap:1rem;align-items:start;}
+.snum{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--gold);padding-top:.15rem;letter-spacing:.08em;}
+.stit{font-size:clamp(13px,1.4vw,16px);color:var(--moon);font-weight:500;margin-bottom:.15rem;}
+.sdesc{font-size:clamp(11px,1.2vw,13px);color:var(--textd);font-weight:300;line-height:1.65;}
+
+/* PIPELINE */
+.pipe{display:flex;align-items:center;flex-wrap:wrap;gap:.4rem;width:100%;max-width:1000px;margin-bottom:1.5rem;justify-content:center;}
+.pnode{background:var(--card2);border:.5px solid var(--border2);padding:.55rem .9rem;border-radius:2px;text-align:center;}
+.pnode.hi{border-color:var(--gold2);background:rgba(201,151,74,.06);}
+.plab{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--moon2);display:block;}
+.psub{font-size:10px;color:var(--moon3);display:block;margin-top:1px;}
+.pnode.hi .plab{color:var(--gold);}
+.parr{color:var(--gold2);font-size:14px;}
+
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;width:100%;max-width:1000px;}
+.stat{background:var(--card);border:.5px solid var(--border);padding:1rem;border-radius:3px;text-align:center;}
+.sval{font-family:'Lora',serif;font-size:clamp(24px,2.8vw,36px);font-weight:400;color:var(--gold);display:block;line-height:1;margin-bottom:.4rem;}
+.slab{font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.15em;text-transform:uppercase;color:var(--moon3);}
+
+/* CODE */
+code{font-family:'IBM Plex Mono',monospace;font-size:.85em;color:var(--blue);background:rgba(91,143,207,.08);padding:1px 5px;border-radius:2px;}
+.codeblock{font-family:'IBM Plex Mono',monospace;font-size:clamp(10px,1.1vw,13px);color:var(--blue);background:var(--card);border:.5px solid var(--border);border-left:2px solid var(--blue);padding:1rem 1.2rem;border-radius:0 3px 3px 0;line-height:2;white-space:pre;}
+
+/* COVER */
+.cover-moon{position:absolute;right:6vw;top:50%;transform:translateY(-50%);opacity:.12;pointer-events:none;}
+.cover-eye{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.25em;text-transform:uppercase;color:var(--gold);margin-bottom:1.5rem;}
+.cover-t{font-family:'Lora',serif;font-size:clamp(48px,8vw,90px);font-weight:400;color:var(--moon);letter-spacing:-.02em;line-height:1;margin-bottom:1.2rem;}
+.cover-t span{color:var(--gold);font-style:italic;}
+.cover-sub{font-size:clamp(14px,1.8vw,20px);font-weight:300;color:var(--moon2);max-width:520px;line-height:1.7;margin-bottom:2.5rem;}
+.cover-metas{display:flex;gap:2.5rem;}
+.cm{text-align:left;}
+.cml{font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.2em;text-transform:uppercase;color:var(--moon3);display:block;margin-bottom:3px;}
+.cmv{font-size:14px;font-weight:300;color:var(--moon2);}
+
+/* QUOTE */
+.bigq{font-family:'Lora',serif;font-style:italic;font-size:clamp(18px,2.8vw,36px);font-weight:400;color:var(--moon);line-height:1.5;max-width:800px;text-align:center;position:relative;}
+.bigq::before{content:'\201C';font-size:7rem;color:var(--gold2);opacity:.25;position:absolute;top:-3.5rem;left:-1.5rem;font-style:normal;line-height:1;}
+.qattr{margin-top:1.8rem;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.15em;color:var(--moon3);text-transform:uppercase;}
+
+/* SLIDE WRAPPER */
+.sw{width:100%;max-width:1000px;}
+.sh{margin-bottom:1.5rem;}
+
+/* COMPARE TABLE */
+.ctable{width:100%;max-width:1000px;border-collapse:collapse;}
+.ctable th{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--moon3);padding:.6rem 1rem;text-align:left;border-bottom:.5px solid var(--border2);}
+.ctable td{font-size:clamp(12px,1.3vw,14px);font-weight:300;padding:.65rem 1rem;border-bottom:.5px solid var(--border);color:var(--text);}
+.ctable tr:last-child td{border-bottom:none;}
+.ctable td.hi{color:var(--gold);font-weight:500;}
+.ctable td em{color:var(--teal);font-style:normal;}
+
+/* ROADMAP */
+.rm{display:flex;flex-direction:column;gap:0;width:100%;max-width:1000px;}
+.rm-item{display:grid;grid-template-columns:130px 1fr;align-items:start;padding:.8rem 0;border-bottom:.5px solid var(--border);}
+.rm-item:last-child{border-bottom:none;}
+.rm-phase{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;}
+.rm-phase.done{color:var(--teal);}
+.rm-phase.wip{color:var(--gold);}
+.rm-phase.future{color:var(--moon3);}
+.rm-text{font-size:clamp(12px,1.3vw,14px);font-weight:300;color:var(--text);line-height:1.6;}
+
+/* ANIM */
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:none;}}
+</style>
+</head>
+<body>
+<canvas id="stars"></canvas>
+<div id="pbar"></div>
+
+<div class="deck" id="deck">
+
+<!-- S1 COVER -->
+<div class="slide active" id="s1">
+  <svg class="cover-moon" width="360" height="360" viewBox="0 0 300 300">
+    <circle cx="150" cy="150" r="138" fill="#ede7d8"/>
+    <ellipse cx="205" cy="150" rx="85" ry="138" fill="#07060f"/>
+    <circle cx="78" cy="88" r="17" fill="#c8c0b0" opacity=".35"/>
+    <circle cx="175" cy="55" r="9" fill="#c0b8a8" opacity=".28"/>
+    <circle cx="112" cy="198" r="22" fill="#b8b0a0" opacity=".32"/>
+    <circle cx="58" cy="158" r="13" fill="#c0b8a8" opacity=".28"/>
+    <circle cx="135" cy="138" r="7" fill="#b0a898" opacity=".38"/>
+    <circle cx="90" cy="130" r="28" fill="#c4bcac" opacity=".2"/>
+  </svg>
+  <div class="cover-eye">InfoEducație 2026 · Secțiunea Software Utilitar</div>
+  <div class="cover-t">lunar_<span>tracer</span></div>
+  <div class="cover-sub">Un motor de randare fizic care produce imaginea Lunii pentru orice dată și oră introdusă — fără telescop, fără condiții meteo, fără echipament special.</div>
+  <div class="cover-metas">
+    <div class="cm"><span class="cml">limbaj</span><span class="cmv">C++17</span></div>
+    <div class="cm"><span class="cml">tehnică</span><span class="cmv">Ray Tracing fizic</span></div>
+    <div class="cm"><span class="cml">model optic</span><span class="cmv">Hapke BRDF</span></div>
+    <div class="cm"><span class="cml">precizie</span><span class="cmv">&lt; 0.3° vs. NASA JPL</span></div>
+  </div>
+</div>
+
+<!-- S2 ANALIZA PIETEI -->
+<div class="slide" id="s2">
+  <div class="sw">
+    <div class="sh">
+      <div class="chap-badge">Cap. I — Alegerea tematicii · Analiza pieței <span class="score-pill">10 pct</span></div>
+      <div class="stitle">Ce există deja și <em>de ce lunar_tracer e diferit</em></div>
+      <div class="srule"></div>
+    </div>
+    <div class="g2">
+      <div class="gcol">
+        <div class="body">
+          <p>Înainte de a începe, m-am documentat despre ce soluții există pentru vizualizarea Lunii. Am găsit trei categorii principale:</p>
+          <p><strong>Aplicații foto-realiste</strong> cum ar fi Stellarium sau SkySafari — arată poziția Lunii pe cer, dar folosesc <em>fotografii reale compozite</em>, nu calculează fizica luminii. Imaginea e aceeași indiferent de dată.</p>
+          <p><strong>Simulatoare NASA</strong> (SPICE toolkit) — au precizie de navigație spațială, dar sunt instrumente de cercetare cu interfață CLI complexă, nu accesibile publicului general.</p>
+          <p><strong>Randatoare 3D generice</strong> (Blender, Maya) — pot produce o Lună frumoasă, dar nu știu unde e Soarele la 22 octombrie 2019 ora 21:43.</p>
+        </div>
+      </div>
+      <div class="gcol">
+        <div class="card accent">
+          <span class="clabel">Elementul distinctiv</span>
+          <p class="cbody">lunar_tracer este <em>singurul instrument</em> care combină efemerida astronomică precisă cu un model de reflectanță fizic real (Hapke), producând o imagine verificabilă față de orice fotografie din aceeași noapte.</p>
+        </div>
+        <div class="card">
+          <span class="clabel">Public țintă</span>
+          <p class="cbody">Astronomi amatori fără telescop · elevi și studenți la fizică sau astronomie · oricine vrea să înțeleagă cum arată Luna la o anumită dată istorică sau viitoare.</p>
+        </div>
+        <div class="card">
+          <span class="clabel">Inovație cheie</span>
+          <p class="cbody">Modelul <strong>Hapke</strong> folosit de NASA pentru planificarea misiunilor lunare — aplicat pentru prima dată într-un renderer accesibil publicului general.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- S3 PLAN -->
+<div class="slide" id="s3">
+  <div class="sw">
+    <div class="sh">
+      <div class="chap-badge">Cap. I.2 — Planificarea dezvoltării <span class="score-pill">5 pct</span></div>
+      <div class="stitle">Cum am <em>planificat</em> construcția</div>
+      <div class="srule"></div>
+    </div>
+    <div class="g2" style="align-items:start;">
+      <div class="gcol">
+        <div class="body">
+          <p>Proiectul a fost descompus în module independente, fiecare putând fi testat separat înainte de integrare. Ordinea a fost dictată de dependențe: nu poți testa randarea dacă nu ai geometria, nu poți valida geometria fără efemerida.</p>
+          <p>Fiecare modul are o <em>interfață minimă</em> — un header cu tipuri clare — astfel că înlocuirea sau îmbunătățirea unui modul nu afectează restul codului.</p>
+        </div>
+        <div class="card accent">
+          <span class="clabel">Principiu arhitectural</span>
+          <p class="cbody">Separare strictă: <em>astronomie</em> (ce știe cerul), <em>geometrie</em> (ce știe suprafața), <em>fizică optică</em> (ce știe lumina), <em>render</em> (ce asamblează totul). Fiecare poate evolua independent.</p>
+        </div>
+      </div>
+      <div class="rm">
+        <div class="rm-item">
+          <span class="rm-phase done">✓ Faza 1</span>
+          <span class="rm-text">Efemerida — calcul poziții Soare/Lună, validare față de NASA JPL Horizons</span>
+        </div>
+        <div class="rm-item">
+          <span class="rm-phase done">✓ Faza 2</span>
+          <span class="rm-text">Loader mesh + BVH — intersecție raze, testare pe sferă simplă</span>
+        </div>
+        <div class="rm-item">
+          <span class="rm-phase done">✓ Faza 3</span>
+          <span class="rm-text">Implementare Hapke BRDF — validare față de publicații NASA</span>
+        </div>
+        <div class="rm-item">
+          <span class="rm-phase done">✓ Faza 4</span>
+          <span class="rm-text">Camera + renderer complet + anti-aliasing multi-rază</span>
+        </div>
+        <div class="rm-item">
+          <span class="rm-phase done">✓ Faza 5</span>
+          <span class="rm-text">Refracție atmosferică + Earthshine + output BMP/meta</span>
+        </div>
+        <div class="rm-item">
+          <span class="rm-phase wip">→ Roadmap</span>
+          <span class="rm-text">Mesh LOLA NASA (2M triunghiuri) · interfață grafică · export PNG 16-bit</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- S4 ARHITECTURA -->
+<div class="slide" id="s4">
+  <div class="sw">
+    <div class="sh">
+      <div class="chap-badge">Cap. II.1 — Proiectarea arhitecturală <span class="score-pill">20 pct</span></div>
+      <div class="stitle">Arhitectura — <em>șapte module</em> independente</div>
+      <div class="srule"></div>
+    </div>
+    <div class="pipe">
+      <div class="pnode hi"><span class="plab">main.cpp</span><span class="psub">CLI + Config</span></div>
+      <span class="parr">→</span>
+      <div class="pnode"><span class="plab">ephemeris.h</span><span class="psub">VSOP87·ELP2000</span></div>
+      <span class="parr">→</span>
+      <div class="pnode"><span class="plab">camera.h</span><span class="psub">pinhole+refracție</span></div>
+      <span class="parr">→</span>
+      <div class="pnode"><span class="plab">mesh.h</span><span class="psub">BVH + triunghiuri</span></div>
+      <span class="parr">→</span>
+      <div class="pnode"><span class="plab">brdf.h</span><span class="psub">Hapke+umbre</span></div>
+      <span class="parr">→</span>
+      <div class="pnode"><span class="plab">renderer.h</span><span class="psub">OpenMP loop</span></div>
+      <span class="parr">→</span>
+      <div class="pnode hi"><span class="plab">image.h</span><span class="psub">BMP + meta</span></div>
+    </div>
+    <div class="g3">
+      <div class="card">
+        <span class="clabel">vec3.h · ray.h</span>
+        <p class="cbody">Fundația matematică: vectori 3D, operații geometrice (dot, cross, normalizare), tipul rază = origine + direcție. Toată fizica se construiește pe aceste tipuri.</p>
+      </div>
+      <div class="card accent">
+        <span class="clabel">mesh.h — geometria Lunii</span>
+        <p class="cbody">Încarcă <code>moon_mesh.bin</code> — mii de triunghiuri. Construiește <em>BVH</em> la încărcare: arbore binar de cutii de delimitare pentru intersecție O(log N) în loc de O(N).</p>
+      </div>
+      <div class="card blue">
+        <span class="clabel">brdf.h — inima fizică</span>
+        <p class="cbody">Modelul <strong>Hapke complet</strong>: funcție de fază Henyey-Greenstein, termenul de opoziție B₀, funcția H Chandrasekhar. Albedo per pixel din textură 4096×2048.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- S5 TEHNOLOGII -->
+<div class="slide" id="s5">
+  <div class="sw">
+    <div class="sh">
+      <div class="chap-badge">Cap. II.2 — Tehnologiile folosite <span class="score-pill">5 pct</span></div>
+      <div class="stitle">De ce <em>C++17</em> și nu altceva</div>
+      <div class="srule"></div>
+    </div>
+    <div class="g2" style="align-items:start;">
+      <div class="gcol">
+        <div class="body">
+          <p>Ray tracing este o operație <em>compute-bound</em> — adică limitată de puterea de calcul, nu de rețea sau disc. La 1920×1080 pixeli × 8 raze = 16 milioane de raze, fiecare cu intersecții, calcule trigonometrice și modele fizice.</p>
+          <p>În <strong>Python</strong>, același calcul ar dura de 50–100× mai mult — inacceptabil pentru o unealtă interactivă. C++17 compilat cu -O3 produce cod mașină optimizat care rulează direct pe CPU.</p>
+          <p>Biblioteca <strong>OpenMP</strong> — open source, inclusă în GCC — paralelizează automat bucla de pixeli pe toate core-urile disponibile cu o singură linie de directivă. Pe 6 core-uri: randare de ~6× mai rapidă.</p>
+        </div>
+      </div>
+      <div class="gcol">
+        <table class="ctable">
+          <tr><th>Tehnologie</th><th>Rol</th><th>Alternativă considerată</th></tr>
+          <tr><td class="hi">C++17</td><td class="cbody">Calcul numeric de viteză maximă</td><td class="cbody">Rust (mai puțin tooling matematic)</td></tr>
+          <tr><td class="hi">OpenMP</td><td class="cbody">Paralelism multi-core</td><td class="cbody">std::thread (mai mult boilerplate)</td></tr>
+          <tr><td class="hi">VSOP87</td><td class="cbody">Efemerida Soarelui</td><td class="cbody">SPICE NASA (prea complex)</td></tr>
+          <tr><td class="hi">ELP2000</td><td class="cbody">Efemerida Lunii</td><td class="cbody">Efemerida simplificată (precizie insuficientă)</td></tr>
+          <tr><td class="hi">Hapke BRDF</td><td class="cbody">Reflectanță fizică</td><td class="cbody">Lambertian (incorect pentru regolith)</td></tr>
+          <tr><td class="hi">BMP raw</td><td class="cbody">Output portabil, fără dependențe</td><td class="cbody">PNG (necesita libpng extern)</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- S6 STABILITATE + SECURITATE -->
+<div class="slide" id="s6">
+  <div class="sw">
+    <div class="sh">
+      <div class="chap-badge">Cap. II.3–II.4 — Stabilitate &amp; Securitate <span class="score-pill">10 pct</span></div>
+      <div class="stitle">Gestionarea <em>resurselor</em> și a erorilor</div>
+      <div clas
